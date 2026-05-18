@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>越南餐厅推荐</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#/">
+          <span class="brand-mark">HM</span>
+          <span>
+            <strong>越南餐厅推荐</strong>
+            <small>中国人视角的好店整理</small>
+          </span>
+        </a>
+        <nav class="top-actions" aria-label="主导航">
+          <a class="ghost-button" href="#/">找餐厅</a>
+          <a class="primary-button" href="#/submit">提交推荐</a>
+        </nav>
+      </header>
+
+      <main id="app" class="page" aria-live="polite"></main>
+    </div>
+
+    <template id="home-template">
+      <section class="hero-band">
+        <div>
+          <p class="eyebrow">Vietnam Food Notes</p>
+          <h1>刚来越南，先从几家靠谱的店吃起。</h1>
+          <p class="intro">按区域和菜系筛选，看看其他中国人为什么推荐，然后一键打开 Google Maps。</p>
+        </div>
+        <a class="primary-button hero-cta" href="#/submit">推荐一家店</a>
+      </section>
+
+      <section class="filter-panel" aria-label="餐厅筛选">
+        <div class="filter-group">
+          <label for="city-filter">城市</label>
+          <select id="city-filter"></select>
+        </div>
+        <div class="filter-group">
+          <label for="area-filter">区域</label>
+          <select id="area-filter"></select>
+        </div>
+        <div class="filter-group">
+          <label for="cuisine-filter">菜系</label>
+          <select id="cuisine-filter"></select>
+        </div>
+        <button class="icon-button" id="reset-filter" type="button" aria-label="重置筛选" title="重置筛选">↺</button>
+      </section>
+
+      <section>
+        <div class="section-heading">
+          <h2>餐厅列表</h2>
+          <span id="result-count"></span>
+        </div>
+        <div id="restaurant-list" class="restaurant-list"></div>
+      </section>
+    </template>
+
+    <template id="detail-template">
+      <article class="detail-layout">
+        <a class="back-link" href="#/">← 返回列表</a>
+        <div id="detail-content"></div>
+      </article>
+    </template>
+
+    <template id="submit-template">
+      <section class="submit-layout">
+        <a class="back-link" href="#/">← 返回列表</a>
+        <div class="form-heading">
+          <p class="eyebrow">Submit</p>
+          <h1>推荐一家你觉得值得去的店</h1>
+          <p>提交后会进入待整理列表。第一版不做登录，所以请认真填写昵称和推荐理由。</p>
+        </div>
+        <form id="submit-form" class="submit-form" novalidate>
+          <div class="form-field">
+            <label for="nickname">昵称</label>
+            <input id="nickname" name="nickname" type="text" maxlength="20" autocomplete="nickname" />
+            <span class="field-error" data-error-for="nickname"></span>
+          </div>
+          <div class="form-field">
+            <label for="name">店名</label>
+            <input id="name" name="name" type="text" maxlength="60" autocomplete="off" />
+            <span class="field-error" data-error-for="name"></span>
+          </div>
+          <div class="form-field">
+            <label for="mapsUrl">Google Maps 链接</label>
+            <input id="mapsUrl" name="mapsUrl" type="url" maxlength="500" placeholder="https://maps.app.goo.gl/..." />
+            <span class="field-error" data-error-for="mapsUrl"></span>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="city">城市</label>
+              <select id="city" name="city"></select>
+              <span class="field-error" data-error-for="city"></span>
+            </div>
+            <div class="form-field">
+              <label for="area">区域</label>
+              <select id="area" name="area"></select>
+              <span class="field-error" data-error-for="area"></span>
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="cuisine">菜系</label>
+            <select id="cuisine" name="cuisine"></select>
+            <span class="field-error" data-error-for="cuisine"></span>
+          </div>
+          <div class="form-field">
+            <label for="reason">推荐理由</label>
+            <textarea id="reason" name="reason" maxlength="300" rows="6" placeholder="写清楚为什么值得去，比如口味、适合谁、哪一点让你愿意推荐。"></textarea>
+            <div class="field-meta">
+              <span class="field-error" data-error-for="reason"></span>
+              <span id="reason-count">0/300</span>
+            </div>
+          </div>
+          <button class="primary-button form-submit" type="submit">提交推荐</button>
+          <p id="submit-result" class="submit-result" role="status"></p>
+        </form>
+      </section>
+    </template>
+
+    <template id="admin-template">
+      <section class="admin-layout">
+        <a class="back-link" href="#/">← 返回列表</a>
+        <div class="form-heading">
+          <p class="eyebrow">Review</p>
+          <h1>本地整理台</h1>
+          <p>这里仅用于原型测试，正式上线时建议改成带权限的后台或云数据库管理台。</p>
+        </div>
+        <div id="admin-list" class="admin-list"></div>
+      </section>
+    </template>
+
+    <script src="./config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
