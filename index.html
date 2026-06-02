@@ -30,16 +30,13 @@
         <div>
           <p class="eyebrow">Vietnam Food Notes</p>
           <h1>刚来越南，先从几家靠谱的店吃起。</h1>
-          <p class="intro">按区域和菜系筛选，看看其他中国人为什么推荐，然后一键打开 Google Maps。</p>
+          <p class="intro">给在越南生活、工作和旅行的中国人互相分享餐厅用。第一版先把胡志明做扎实，其他城市会根据大家的需求逐步开放。</p>
+          <p class="intro intro-secondary">按区域和菜系筛选，看看其他中国人为什么推荐，然后一键打开 Google Maps。</p>
         </div>
         <a class="primary-button hero-cta" href="#/submit">推荐一家店</a>
       </section>
 
       <section class="filter-panel" aria-label="餐厅筛选">
-        <div class="filter-group">
-          <label for="city-filter">城市</label>
-          <select id="city-filter"></select>
-        </div>
         <div class="filter-group">
           <label for="area-filter">区域</label>
           <select id="area-filter"></select>
@@ -91,17 +88,11 @@
             <input id="mapsUrl" name="mapsUrl" type="url" maxlength="500" placeholder="https://maps.app.goo.gl/..." />
             <span class="field-error" data-error-for="mapsUrl"></span>
           </div>
-          <div class="form-row">
-            <div class="form-field">
-              <label for="city">城市</label>
-              <select id="city" name="city"></select>
-              <span class="field-error" data-error-for="city"></span>
-            </div>
-            <div class="form-field">
-              <label for="area">区域</label>
-              <select id="area" name="area"></select>
-              <span class="field-error" data-error-for="area"></span>
-            </div>
+          <input id="city" name="city" type="hidden" value="胡志明" />
+          <div class="form-field">
+            <label for="area">区域</label>
+            <select id="area" name="area"></select>
+            <span class="field-error" data-error-for="area"></span>
           </div>
           <div class="form-field">
             <label for="cuisine">菜系</label>

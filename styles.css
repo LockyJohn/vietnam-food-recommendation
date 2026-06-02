@@ -186,13 +186,17 @@ h2 {
   line-height: 1.65;
 }
 
+.intro-secondary {
+  margin-top: 8px;
+}
+
 .hero-cta {
   min-width: 136px;
 }
 
 .filter-panel {
   display: grid;
-  grid-template-columns: minmax(140px, 0.9fr) minmax(160px, 1fr) minmax(160px, 1fr) auto;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
   gap: 12px;
   align-items: end;
   margin: 10px 0 28px;

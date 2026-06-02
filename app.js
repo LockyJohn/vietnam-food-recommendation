@@ -1,13 +1,28 @@
-const CITIES = ["全部城市", "胡志明", "河内", "岘港", "芽庄", "大叻", "其他"];
-const CITY_AREAS = {
-  胡志明: ["全部区域", "1区", "2区/Thao Dien", "3区", "7区/富美兴", "Binh Thanh", "Tan Binh", "其他"],
-  河内: ["全部区域", "还剑", "西湖", "巴亭", "纸桥", "二征夫人", "其他"],
-  岘港: ["全部区域", "海州", "山茶", "美溪", "五行山", "其他"],
-  芽庄: ["全部区域", "市中心", "海滨", "北部", "其他"],
-  大叻: ["全部区域", "市中心", "春香湖周边", "夜市周边", "其他"],
-  其他: ["全部区域", "市中心", "机场附近", "其他"],
-};
-const DEFAULT_AREAS = ["全部区域", "市中心", "机场附近", "其他"];
+const PRIMARY_CITY = "胡志明";
+const HCMC_AREAS = [
+  "全部区域",
+  "1区/市中心",
+  "2区/Thao Dien",
+  "2区/An Phu",
+  "3区",
+  "4区",
+  "5区/堤岸",
+  "6区",
+  "7区/富美兴",
+  "7区/新归",
+  "10区",
+  "11区",
+  "Binh Thanh",
+  "Phu Nhuan",
+  "Tan Binh/机场",
+  "Tan Phu",
+  "Go Vap",
+  "Thu Duc",
+  "Binh Tan",
+  "Nha Be",
+  "其他",
+];
+const DEFAULT_AREAS = HCMC_AREAS;
 const CUISINES = ["全部菜系", "中餐", "火锅", "烧烤", "粤菜", "川湘菜", "粉面", "小吃快餐", "咖啡甜品", "越南菜", "日料韩餐", "西餐", "其他"];
 
 const seedRestaurants = [
@@ -29,7 +44,7 @@ const seedRestaurants = [
     id: "demo-d1-hotpot",
     name: "1区火锅示例店",
     city: "胡志明",
-    area: "1区",
+    area: "1区/市中心",
     cuisine: "火锅",
     googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=District+1+hotpot+Ho+Chi+Minh",
     wantCount: 26,
@@ -70,7 +85,7 @@ const seedRestaurants = [
     id: "demo-tan-binh-vietnamese",
     name: "Tan Binh 越南菜示例店",
     city: "胡志明",
-    area: "Tan Binh",
+    area: "Tan Binh/机场",
     cuisine: "越南菜",
     googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Tan+Binh+Vietnamese+restaurant",
     wantCount: 9,
@@ -142,7 +157,7 @@ async function getRestaurants() {
     .map((item) => ({
       id: item.id,
       name: item.name,
-      city: item.city || "胡志明",
+      city: item.city || PRIMARY_CITY,
       area: item.area,
       cuisine: item.cuisine,
       googleMapsUrl: item.mapsUrl,
@@ -166,7 +181,7 @@ async function getRestaurants() {
 
 async function fetchCloudRestaurants() {
   const rows = await cloudRequest(
-    `?select=id,nickname,name,maps_url,city,area,cuisine,reason,want_count,created_at&status=eq.published&order=created_at.desc`,
+    `?select=id,nickname,name,maps_url,city,area,cuisine,reason,want_count,created_at&status=eq.published&city=eq.${encodeURIComponent(PRIMARY_CITY)}&order=created_at.desc`,
   );
   return rows.map((item) => ({
     id: `cloud-${item.id}`,
@@ -186,7 +201,7 @@ async function saveCloudSubmission(data) {
     nickname: data.nickname.trim(),
     name: data.name.trim(),
     maps_url: data.mapsUrl.trim(),
-    city: data.city,
+    city: PRIMARY_CITY,
     area: data.area,
     cuisine: data.cuisine,
     reason: data.reason.trim(),
@@ -254,41 +269,32 @@ function fillSelect(select, options, placeholderMode = false) {
 
 async function renderHome() {
   app.replaceChildren(cloneTemplate("#home-template"));
-  const cityFilter = document.querySelector("#city-filter");
   const areaFilter = document.querySelector("#area-filter");
   const cuisineFilter = document.querySelector("#cuisine-filter");
   const resetButton = document.querySelector("#reset-filter");
 
-  fillSelect(cityFilter, CITIES);
   fillSelect(areaFilter, DEFAULT_AREAS);
   fillSelect(cuisineFilter, CUISINES);
 
   const updateList = async () => {
-    const city = cityFilter.value;
     const area = areaFilter.value;
     const cuisine = cuisineFilter.value;
     const list = document.querySelector("#restaurant-list");
     list.innerHTML = `<div class="empty-state"><p>正在加载餐厅...</p></div>`;
 
     const restaurants = (await getRestaurants()).filter((restaurant) => {
-      const cityMatch = city === "全部城市" || restaurant.city === city;
       const areaMatch = area === "全部区域" || restaurant.area === area;
       const cuisineMatch = cuisine === "全部菜系" || restaurant.cuisine === cuisine;
-      return cityMatch && areaMatch && cuisineMatch;
+      return restaurant.city === PRIMARY_CITY && areaMatch && cuisineMatch;
     });
 
     renderCloudStatus();
     renderRestaurantList(restaurants);
   };
 
-  cityFilter.addEventListener("change", () => {
-    fillSelect(areaFilter, getAreasForCity(cityFilter.value));
-    updateList();
-  });
   areaFilter.addEventListener("change", updateList);
   cuisineFilter.addEventListener("change", updateList);
   resetButton.addEventListener("click", () => {
-    cityFilter.value = "全部城市";
     fillSelect(areaFilter, DEFAULT_AREAS);
     areaFilter.value = "全部区域";
     cuisineFilter.value = "全部菜系";
@@ -427,14 +433,9 @@ function renderSubmit() {
   const reasonCount = document.querySelector("#reason-count");
   const result = document.querySelector("#submit-result");
 
-  fillSelect(city, ["请选择城市", ...CITIES.slice(1)], true);
-  fillSelect(area, ["请先选择城市"], true);
+  city.value = PRIMARY_CITY;
+  fillSelect(area, ["请选择区域", ...DEFAULT_AREAS.slice(1)], true);
   fillSelect(cuisine, ["请选择菜系", ...CUISINES.slice(1)], true);
-
-  city.addEventListener("change", () => {
-    const areaOptions = city.value ? ["请选择区域", ...getAreasForCity(city.value).slice(1)] : ["请先选择城市"];
-    fillSelect(area, areaOptions, true);
-  });
 
   reason.addEventListener("input", () => {
     reasonCount.textContent = `${reason.value.length}/300`;
@@ -572,11 +573,6 @@ function validateSubmission(data) {
   if (reason.length < 10 || reason.length > 300) errors.reason = "请写 10-300 字的推荐理由";
 
   return errors;
-}
-
-function getAreasForCity(city) {
-  if (city === "全部城市") return DEFAULT_AREAS;
-  return CITY_AREAS[city] || CITY_AREAS["其他"];
 }
 
 function isValidMapsUrl(url) {
