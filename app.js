@@ -33,6 +33,9 @@ const seedRestaurants = [
     area: "2区/Thao Dien",
     cuisine: "粉面",
     googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Thao+Dien+beef+noodle",
+    photoUrl: "",
+    rating: null,
+    reviewCount: null,
     wantCount: 18,
     recommendCount: 3,
     reasons: [
@@ -47,6 +50,9 @@ const seedRestaurants = [
     area: "1区/市中心",
     cuisine: "火锅",
     googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=District+1+hotpot+Ho+Chi+Minh",
+    photoUrl: "",
+    rating: null,
+    reviewCount: null,
     wantCount: 26,
     recommendCount: 5,
     reasons: [
@@ -61,6 +67,9 @@ const seedRestaurants = [
     area: "7区/富美兴",
     cuisine: "粤菜",
     googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Phu+My+Hung+Cantonese+restaurant",
+    photoUrl: "",
+    rating: null,
+    reviewCount: null,
     wantCount: 14,
     recommendCount: 2,
     reasons: [
@@ -74,6 +83,9 @@ const seedRestaurants = [
     area: "Binh Thanh",
     cuisine: "烧烤",
     googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Binh+Thanh+BBQ+restaurant",
+    photoUrl: "",
+    rating: null,
+    reviewCount: null,
     wantCount: 21,
     recommendCount: 4,
     reasons: [
@@ -88,6 +100,9 @@ const seedRestaurants = [
     area: "Tan Binh/机场",
     cuisine: "越南菜",
     googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Tan+Binh+Vietnamese+restaurant",
+    photoUrl: "",
+    rating: null,
+    reviewCount: null,
     wantCount: 9,
     recommendCount: 2,
     reasons: [
@@ -101,6 +116,9 @@ const seedRestaurants = [
     area: "3区",
     cuisine: "咖啡甜品",
     googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=District+3+coffee+dessert+Ho+Chi+Minh",
+    photoUrl: "",
+    rating: null,
+    reviewCount: null,
     wantCount: 12,
     recommendCount: 3,
     reasons: [
@@ -161,6 +179,9 @@ async function getRestaurants() {
       area: item.area,
       cuisine: item.cuisine,
       googleMapsUrl: item.mapsUrl,
+      photoUrl: item.photoUrl || "",
+      rating: item.rating ?? null,
+      reviewCount: item.reviewCount ?? null,
       wantCount: 0,
       recommendCount: 1,
       reasons: [{ nickname: item.nickname, text: item.reason }],
@@ -181,7 +202,7 @@ async function getRestaurants() {
 
 async function fetchCloudRestaurants() {
   const rows = await cloudRequest(
-    `?select=id,nickname,name,maps_url,city,area,cuisine,reason,want_count,created_at&status=eq.published&city=eq.${encodeURIComponent(PRIMARY_CITY)}&order=created_at.desc`,
+    `?select=*&status=eq.published&city=eq.${encodeURIComponent(PRIMARY_CITY)}&order=created_at.desc`,
   );
   return rows.map((item) => ({
     id: `cloud-${item.id}`,
@@ -190,6 +211,9 @@ async function fetchCloudRestaurants() {
     area: item.area,
     cuisine: item.cuisine,
     googleMapsUrl: item.maps_url,
+    photoUrl: item.photo_url || "",
+    rating: item.rating ?? null,
+    reviewCount: item.review_count ?? null,
     wantCount: item.want_count || 0,
     recommendCount: 1,
     reasons: [{ nickname: item.nickname, text: item.reason }],
@@ -322,8 +346,10 @@ function renderRestaurantList(restaurants) {
   list.innerHTML = restaurants
     .map((restaurant) => {
       const firstReason = restaurant.reasons[0]?.text || "这家店还没有展示推荐理由。";
+      const googleMeta = renderGoogleMeta(restaurant);
       return `
         <a class="restaurant-card" href="#/restaurant/${restaurant.id}">
+          ${renderRestaurantPhoto(restaurant, "card-photo")}
           <div class="card-top">
             <div class="tag-row">
               <span class="tag">${escapeHtml(restaurant.area)}</span>
@@ -332,6 +358,7 @@ function renderRestaurantList(restaurants) {
               <span class="tag hot">${restaurant.recommendCount} 人推荐</span>
             </div>
             <h3>${escapeHtml(restaurant.name)}</h3>
+            ${googleMeta ? `<p class="google-meta">${googleMeta}</p>` : ""}
             <p class="reason-preview">${escapeHtml(firstReason)}</p>
           </div>
           <div class="card-meta">
@@ -342,6 +369,23 @@ function renderRestaurantList(restaurants) {
       `;
     })
     .join("");
+}
+
+function renderRestaurantPhoto(restaurant, className) {
+  if (!restaurant.photoUrl) return "";
+  return `
+    <div class="${className}">
+      <img src="${escapeAttribute(restaurant.photoUrl)}" alt="${escapeAttribute(restaurant.name)}" loading="lazy" />
+    </div>
+  `;
+}
+
+function renderGoogleMeta(restaurant) {
+  if (!restaurant.rating && !restaurant.reviewCount) return "";
+  const parts = [];
+  if (restaurant.rating) parts.push(`<strong>${escapeHtml(formatRating(restaurant.rating))}</strong>`);
+  if (restaurant.reviewCount) parts.push(`${escapeHtml(formatReviewCount(restaurant.reviewCount))} 条 Google 评论`);
+  return `<span class="star">★</span> ${parts.join(" · ")}`;
 }
 
 function renderCloudStatus() {
@@ -371,9 +415,11 @@ async function renderDetail(id) {
   const wantedIds = getWantedIds();
   const isWanted = wantedIds.includes(restaurant.id);
   const adjustedWantCount = restaurant.wantCount + (isWanted ? 1 : 0);
+  const googleMeta = renderGoogleMeta(restaurant);
 
   detail.innerHTML = `
     <div class="detail-card">
+      ${renderRestaurantPhoto(restaurant, "detail-photo")}
       <div class="detail-main">
         <div>
           <div class="tag-row">
@@ -383,6 +429,7 @@ async function renderDetail(id) {
             <span class="tag hot">${restaurant.recommendCount} 人推荐</span>
           </div>
           <h1>${escapeHtml(restaurant.name)}</h1>
+          ${googleMeta ? `<p class="google-meta detail-google-meta">${googleMeta}</p>` : ""}
           <p class="intro">这里展示的是中文推荐线索。评分、营业时间和导航请以 Google Maps 为准。</p>
         </div>
         <div class="detail-actions">
@@ -582,6 +629,18 @@ function isValidMapsUrl(url) {
   } catch {
     return false;
   }
+}
+
+function formatRating(value) {
+  const rating = Number(value);
+  if (!Number.isFinite(rating)) return value;
+  return rating.toFixed(1);
+}
+
+function formatReviewCount(value) {
+  const count = Number(value);
+  if (!Number.isFinite(count)) return value;
+  return new Intl.NumberFormat("zh-CN").format(count);
 }
 
 function clearErrors() {

@@ -12,6 +12,7 @@
 - 餐厅详情页展示精选推荐理由
 - 一键打开 Google Maps
 - 提交推荐表单，城市固定为胡志明，6 个展示字段全部必填
+- 餐厅卡片支持展示首图、Google 评分和评论数
 - “想去”按钮，使用浏览器本地记录
 - 用户提交内容先进入本地待整理状态，不直接公开
 - 本地整理台：打开 `#/admin`，可把测试提交标为发布、待整理或隐藏
@@ -39,3 +40,21 @@ window.FOOD_APP_CONFIG = {
 ```
 
 配置后，提交推荐会写入云端，并直接出现在所有人的公共列表里。需要隐藏或删除测试数据时，先在 Supabase 表里手动处理。
+
+## Google 信息补全
+
+页面已支持展示 `photo_url`、`rating`、`review_count`。要从 Google Maps 补全首图、评分和评论数：
+
+1. 在 Google Cloud 开通 Places API。
+2. 在 Supabase SQL Editor 重新执行 `supabase-setup.sql`，补齐字段和图片 bucket。
+3. 复制 `.env.example` 为 `.env`，填入 `GOOGLE_MAPS_API_KEY`、`SUPABASE_URL` 和 `SUPABASE_SERVICE_ROLE_KEY`。
+4. 运行：
+
+```bash
+set -a
+source .env
+set +a
+node scripts/enrich-google-places.js
+```
+
+脚本会用店名、区域和胡志明作为搜索条件，补全 Google place id、评分、评论数，并把首图下载到 Supabase Storage 后写回公开图片地址。

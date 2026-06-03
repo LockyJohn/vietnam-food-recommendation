@@ -269,8 +269,8 @@ textarea:focus {
   display: grid;
   min-height: 238px;
   align-content: space-between;
-  gap: 18px;
-  padding: 18px;
+  gap: 14px;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -284,6 +284,29 @@ textarea:focus {
 .card-top {
   display: grid;
   gap: 10px;
+  padding: 18px 18px 0;
+}
+
+.card-photo,
+.detail-photo {
+  overflow: hidden;
+  background: var(--surface-strong);
+}
+
+.card-photo {
+  aspect-ratio: 16 / 10;
+}
+
+.detail-photo {
+  aspect-ratio: 16 / 7;
+}
+
+.card-photo img,
+.detail-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .tag-row {
@@ -315,6 +338,19 @@ textarea:focus {
   line-height: 1.25;
 }
 
+.google-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.google-meta strong,
+.star {
+  color: var(--accent);
+}
+
 .reason-preview {
   display: -webkit-box;
   min-height: 52px;
@@ -332,6 +368,7 @@ textarea:focus {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 0 18px 18px;
   color: var(--muted);
   font-size: 13px;
 }
@@ -384,6 +421,11 @@ textarea:focus {
 .detail-main h1 {
   margin-bottom: 8px;
   font-size: clamp(30px, 6vw, 48px);
+}
+
+.detail-google-meta {
+  margin-bottom: 8px;
+  font-size: 14px;
 }
 
 .detail-actions {

@@ -12,7 +12,18 @@ create table if not exists public.restaurant_recommendations (
   created_at timestamptz not null default now()
 );
 
+alter table public.restaurant_recommendations
+  add column if not exists google_place_id text,
+  add column if not exists rating numeric(2, 1),
+  add column if not exists review_count integer,
+  add column if not exists photo_url text,
+  add column if not exists google_data_updated_at timestamptz;
+
 alter table public.restaurant_recommendations enable row level security;
+
+insert into storage.buckets (id, name, public)
+values ('restaurant-photos', 'restaurant-photos', true)
+on conflict (id) do update set public = excluded.public;
 
 drop policy if exists "Anyone can read published recommendations" on public.restaurant_recommendations;
 create policy "Anyone can read published recommendations"
