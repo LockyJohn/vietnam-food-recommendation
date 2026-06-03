@@ -231,6 +231,14 @@ async function saveCloudSubmission(data) {
     reason: data.reason.trim(),
     status: "published",
   };
+  const rating = normalizeOptionalRating(data.rating);
+  const reviewCount = normalizeOptionalReviewCount(data.reviewCount);
+  const photoUrl = data.photoUrl.trim();
+
+  if (rating !== null) payload.rating = rating;
+  if (reviewCount !== null) payload.review_count = reviewCount;
+  if (photoUrl) payload.photo_url = photoUrl;
+
   await cloudRequest("", {
     method: "POST",
     headers: { Prefer: "return=minimal" },
@@ -510,6 +518,9 @@ function renderSubmit() {
       area: data.area,
       cuisine: data.cuisine,
       reason: data.reason.trim(),
+      photoUrl: data.photoUrl.trim(),
+      rating: normalizeOptionalRating(data.rating),
+      reviewCount: normalizeOptionalReviewCount(data.reviewCount),
       status: "pending",
       createdAt: new Date().toISOString(),
     };
@@ -609,11 +620,17 @@ function validateSubmission(data) {
   const nickname = data.nickname.trim();
   const name = data.name.trim();
   const mapsUrl = data.mapsUrl.trim();
+  const photoUrl = data.photoUrl.trim();
   const reason = data.reason.trim();
+  const rating = normalizeOptionalRating(data.rating);
+  const reviewCount = normalizeOptionalReviewCount(data.reviewCount);
 
   if (nickname.length < 2 || nickname.length > 20) errors.nickname = "请填写 2-20 字的昵称";
   if (name.length < 2 || name.length > 60) errors.name = "请填写 2-60 字的店名";
   if (!isValidMapsUrl(mapsUrl)) errors.mapsUrl = "请填写有效的 Google Maps 链接";
+  if (data.rating.trim() && rating === null) errors.rating = "评分请填写 0-5 之间的数字";
+  if (data.reviewCount.trim() && reviewCount === null) errors.reviewCount = "评论数请填写非负整数";
+  if (photoUrl && !isValidImageUrl(photoUrl)) errors.photoUrl = "请填写有效的图片链接";
   if (!data.city) errors.city = "请选择城市";
   if (!data.area) errors.area = "请选择区域";
   if (!data.cuisine) errors.cuisine = "请选择菜系";
@@ -629,6 +646,29 @@ function isValidMapsUrl(url) {
   } catch {
     return false;
   }
+}
+
+function isValidImageUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function normalizeOptionalRating(value) {
+  if (!value.trim()) return null;
+  const rating = Number(value);
+  if (!Number.isFinite(rating) || rating < 0 || rating > 5) return null;
+  return Math.round(rating * 10) / 10;
+}
+
+function normalizeOptionalReviewCount(value) {
+  if (!value.trim()) return null;
+  const count = Number(value);
+  if (!Number.isInteger(count) || count < 0 || count > 999999) return null;
+  return count;
 }
 
 function formatRating(value) {

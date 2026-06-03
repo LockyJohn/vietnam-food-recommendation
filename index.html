@@ -87,6 +87,23 @@
             <input id="mapsUrl" name="mapsUrl" type="url" maxlength="500" placeholder="https://maps.app.goo.gl/..." />
             <span class="field-error" data-error-for="mapsUrl"></span>
           </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="rating">Google 评分（可选）</label>
+              <input id="rating" name="rating" type="number" min="0" max="5" step="0.1" inputmode="decimal" placeholder="4.5" />
+              <span class="field-error" data-error-for="rating"></span>
+            </div>
+            <div class="form-field">
+              <label for="reviewCount">Google 评论数（可选）</label>
+              <input id="reviewCount" name="reviewCount" type="number" min="0" max="999999" step="1" inputmode="numeric" placeholder="128" />
+              <span class="field-error" data-error-for="reviewCount"></span>
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="photoUrl">餐厅图片链接（可选）</label>
+            <input id="photoUrl" name="photoUrl" type="url" maxlength="1000" placeholder="https://..." />
+            <span class="field-error" data-error-for="photoUrl"></span>
+          </div>
           <input id="city" name="city" type="hidden" value="胡志明" />
           <div class="form-field">
             <label for="area">区域</label>
