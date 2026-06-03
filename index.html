@@ -100,9 +100,10 @@
             </div>
           </div>
           <div class="form-field">
-            <label for="photoUrl">餐厅图片链接（可选）</label>
-            <input id="photoUrl" name="photoUrl" type="url" maxlength="1000" placeholder="https://..." />
-            <span class="field-error" data-error-for="photoUrl"></span>
+            <label for="photoFile">餐厅照片（可选）</label>
+            <input id="photoFile" name="photoFile" type="file" accept="image/jpeg,image/png,image/webp" />
+            <small class="field-hint">上传自己拍的照片，支持 JPG/PNG/WebP，最大 3MB。</small>
+            <span class="field-error" data-error-for="photoFile"></span>
           </div>
           <input id="city" name="city" type="hidden" value="胡志明" />
           <div class="form-field">

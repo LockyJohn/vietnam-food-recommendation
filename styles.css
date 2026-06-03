@@ -232,6 +232,22 @@ input {
   padding: 0 12px;
 }
 
+input[type="file"] {
+  padding: 9px 12px;
+}
+
+input[type="file"]::file-selector-button {
+  min-height: 30px;
+  margin-right: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
 textarea {
   min-height: 140px;
   resize: vertical;
@@ -504,6 +520,12 @@ textarea:focus {
   color: #b42318;
   font-size: 12px;
   font-weight: 700;
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .field-meta {

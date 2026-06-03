@@ -12,7 +12,7 @@
 - 餐厅详情页展示精选推荐理由
 - 一键打开 Google Maps
 - 提交推荐表单，城市固定为胡志明，基础推荐字段必填
-- 可选补充 Google 评分、评论数和餐厅图片链接
+- 可选补充 Google 评分、评论数，并上传一张自己拍的餐厅照片
 - 餐厅卡片支持展示首图、评分和评论数
 - “想去”按钮，使用浏览器本地记录
 - 用户提交内容先进入本地待整理状态，不直接公开
@@ -44,7 +44,7 @@ window.FOOD_APP_CONFIG = {
 
 ## 评分和图片信息
 
-当前推荐先不依赖 Google Places API。提交者可以手动补充 Google Maps 上看到的评分、评论数，以及一张自己有权使用的餐厅图片链接；这些字段为空时不影响提交。
+当前推荐先不依赖 Google Places API。提交者可以手动补充 Google Maps 上看到的评分、评论数，并上传一张自己拍的餐厅照片；这些字段为空时不影响提交。图片会上传到 Supabase Storage 的 `restaurant-photos` bucket，再把公开图片地址写入推荐数据。
 
 如果后续能开通 Google Cloud，页面也已经支持从云端字段 `photo_url`、`rating`、`review_count` 展示自动补全结果。
 

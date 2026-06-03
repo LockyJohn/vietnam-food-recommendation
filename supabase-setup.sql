@@ -25,6 +25,23 @@ insert into storage.buckets (id, name, public)
 values ('restaurant-photos', 'restaurant-photos', true)
 on conflict (id) do update set public = excluded.public;
 
+drop policy if exists "Anyone can read restaurant photos" on storage.objects;
+create policy "Anyone can read restaurant photos"
+on storage.objects
+for select
+to anon
+using (bucket_id = 'restaurant-photos');
+
+drop policy if exists "Anyone can upload restaurant photos" on storage.objects;
+create policy "Anyone can upload restaurant photos"
+on storage.objects
+for insert
+to anon
+with check (
+  bucket_id = 'restaurant-photos'
+  and lower(storage.extension(name)) in ('jpg', 'jpeg', 'png', 'webp')
+);
+
 drop policy if exists "Anyone can read published recommendations" on public.restaurant_recommendations;
 create policy "Anyone can read published recommendations"
 on public.restaurant_recommendations

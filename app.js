@@ -131,6 +131,9 @@ const storageKeys = {
   submissions: "hcm_food_submissions",
   wants: "hcm_food_wants",
 };
+const PHOTO_BUCKET = "restaurant-photos";
+const MAX_PHOTO_SIZE = 3 * 1024 * 1024;
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const app = document.querySelector("#app");
 const appConfig = window.FOOD_APP_CONFIG || {};
@@ -220,7 +223,7 @@ async function fetchCloudRestaurants() {
   }));
 }
 
-async function saveCloudSubmission(data) {
+async function saveCloudSubmission(data, photoFile) {
   const payload = {
     nickname: data.nickname.trim(),
     name: data.name.trim(),
@@ -233,7 +236,7 @@ async function saveCloudSubmission(data) {
   };
   const rating = normalizeOptionalRating(data.rating);
   const reviewCount = normalizeOptionalReviewCount(data.reviewCount);
-  const photoUrl = data.photoUrl.trim();
+  const photoUrl = await uploadCloudPhoto(photoFile);
 
   if (rating !== null) payload.rating = rating;
   if (reviewCount !== null) payload.review_count = reviewCount;
@@ -265,6 +268,36 @@ async function cloudRequest(query = "", options = {}) {
 
   const text = await response.text();
   return text ? JSON.parse(text) : null;
+}
+
+async function uploadCloudPhoto(file) {
+  if (!hasPhotoFile(file)) return "";
+
+  const extensionByType = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+  };
+  const extension = extensionByType[file.type] || "jpg";
+  const photoId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const path = `${Date.now()}-${photoId}.${extension}`;
+  const response = await fetch(`${cloudConfig.supabaseUrl}/storage/v1/object/${PHOTO_BUCKET}/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: cloudConfig.supabaseAnonKey,
+      Authorization: `Bearer ${cloudConfig.supabaseAnonKey}`,
+      "Content-Type": file.type,
+      "x-upsert": "false",
+    },
+    body: file,
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Photo upload failed: ${response.status}`);
+  }
+
+  return `${cloudConfig.supabaseUrl}/storage/v1/object/public/${PHOTO_BUCKET}/${path}`;
 }
 
 async function renderRoute() {
@@ -380,10 +413,10 @@ function renderRestaurantList(restaurants) {
 }
 
 function renderRestaurantPhoto(restaurant, className) {
-  if (!restaurant.photoUrl) return "";
+  if (!isLikelyEmbeddableImageUrl(restaurant.photoUrl)) return "";
   return `
     <div class="${className}">
-      <img src="${escapeAttribute(restaurant.photoUrl)}" alt="${escapeAttribute(restaurant.name)}" loading="lazy" />
+      <img src="${escapeAttribute(restaurant.photoUrl)}" alt="${escapeAttribute(restaurant.name)}" loading="lazy" onerror="this.parentElement.remove()" />
     </div>
   `;
 }
@@ -501,8 +534,10 @@ function renderSubmit() {
     clearErrors();
     result.textContent = "";
 
-    const data = Object.fromEntries(new FormData(form).entries());
-    const errors = validateSubmission(data);
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    const photoFile = formData.get("photoFile");
+    const errors = validateSubmission(data, photoFile);
 
     if (Object.keys(errors).length) {
       showErrors(errors);
@@ -518,7 +553,7 @@ function renderSubmit() {
       area: data.area,
       cuisine: data.cuisine,
       reason: data.reason.trim(),
-      photoUrl: data.photoUrl.trim(),
+      photoUrl: "",
       rating: normalizeOptionalRating(data.rating),
       reviewCount: normalizeOptionalReviewCount(data.reviewCount),
       status: "pending",
@@ -529,7 +564,7 @@ function renderSubmit() {
       result.textContent = "正在提交...";
       form.querySelector("button[type='submit']").disabled = true;
       try {
-        await saveCloudSubmission(data);
+        await saveCloudSubmission(data, photoFile);
         result.textContent = "提交成功，已同步到公共列表。";
       } catch (error) {
         console.error(error);
@@ -615,12 +650,11 @@ function renderAdmin() {
   });
 }
 
-function validateSubmission(data) {
+function validateSubmission(data, photoFile) {
   const errors = {};
   const nickname = data.nickname.trim();
   const name = data.name.trim();
   const mapsUrl = data.mapsUrl.trim();
-  const photoUrl = data.photoUrl.trim();
   const reason = data.reason.trim();
   const rating = normalizeOptionalRating(data.rating);
   const reviewCount = normalizeOptionalReviewCount(data.reviewCount);
@@ -630,7 +664,8 @@ function validateSubmission(data) {
   if (!isValidMapsUrl(mapsUrl)) errors.mapsUrl = "请填写有效的 Google Maps 链接";
   if (data.rating.trim() && rating === null) errors.rating = "评分请填写 0-5 之间的数字";
   if (data.reviewCount.trim() && reviewCount === null) errors.reviewCount = "评论数请填写非负整数";
-  if (photoUrl && !isValidImageUrl(photoUrl)) errors.photoUrl = "请填写有效的图片链接";
+  const photoError = validatePhotoFile(photoFile);
+  if (photoError) errors.photoFile = photoError;
   if (!data.city) errors.city = "请选择城市";
   if (!data.area) errors.area = "请选择区域";
   if (!data.cuisine) errors.cuisine = "请选择菜系";
@@ -648,6 +683,17 @@ function isValidMapsUrl(url) {
   }
 }
 
+function hasPhotoFile(file) {
+  return file && typeof file.size === "number" && file.size > 0;
+}
+
+function validatePhotoFile(file) {
+  if (!hasPhotoFile(file)) return "";
+  if (!ALLOWED_PHOTO_TYPES.includes(file.type)) return "请上传 JPG、PNG 或 WebP 图片";
+  if (file.size > MAX_PHOTO_SIZE) return "图片不能超过 3MB";
+  return "";
+}
+
 function isValidImageUrl(url) {
   try {
     const parsed = new URL(url);
@@ -655,6 +701,20 @@ function isValidImageUrl(url) {
   } catch {
     return false;
   }
+}
+
+function isGoogleMapsPageUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === "maps.app.goo.gl" || parsed.hostname.includes("google.") && parsed.pathname.includes("/maps");
+  } catch {
+    return false;
+  }
+}
+
+function isLikelyEmbeddableImageUrl(url) {
+  if (!url || !isValidImageUrl(url) || isGoogleMapsPageUrl(url)) return false;
+  return true;
 }
 
 function normalizeOptionalRating(value) {
