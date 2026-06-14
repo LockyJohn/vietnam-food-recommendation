@@ -461,13 +461,11 @@ function renderRestaurantCover(restaurant, className) {
 
   const visual = getRestaurantVisual(restaurant);
   return `
-    <div class="${className} cover-fallback visual-${visual.slug}">
-      <div class="cover-lines" aria-hidden="true"></div>
-      <div class="cover-copy">
+    <div class="${className} generated-cover">
+      <img src="${escapeAttribute(visual.imageUrl)}" alt="${escapeAttribute(`${restaurant.cuisine}菜系氛围图`)}" loading="lazy" />
+      <div class="cover-overlay">
         <span>${escapeHtml(visual.label)}</span>
-        <strong>${escapeHtml(visual.mark)}</strong>
-        <small>${escapeHtml(visual.note)}</small>
-        <em>${escapeHtml(restaurant.area)}</em>
+        <strong>${escapeHtml(restaurant.area)}</strong>
       </div>
     </div>
   `;
@@ -507,21 +505,28 @@ function getRestaurantScene(restaurant) {
 }
 
 function getRestaurantVisual(restaurant) {
-  const visuals = {
-    中餐: { slug: "chinese", label: "Chinese Table", mark: "中餐", note: "热菜 · 米饭 · 聚餐" },
-    火锅: { slug: "hotpot", label: "Hot Pot", mark: "火锅", note: "牛肉 · 汤底 · 朋友局" },
-    烧烤: { slug: "bbq", label: "Grill", mark: "烧烤", note: "炭火 · 串串 · 小聚" },
-    粤菜: { slug: "cantonese", label: "Cantonese", mark: "粤菜", note: "清淡 · 茶点 · 家常" },
-    川湘菜: { slug: "spicy", label: "Spicy", mark: "川湘", note: "辣味 · 下饭 · 够劲" },
-    粉面: { slug: "noodles", label: "Noodles", mark: "粉面", note: "汤头 · 快吃 · 一个人" },
-    小吃快餐: { slug: "snack", label: "Quick Bite", mark: "小吃", note: "简单 · 顺路 · 不费劲" },
-    咖啡甜品: { slug: "coffee", label: "Coffee", mark: "甜品", note: "咖啡 · 蛋糕 · 下午" },
-    越南菜: { slug: "vietnamese", label: "Local Taste", mark: "越南菜", note: "本地 · 日常 · 带朋友" },
-    日料韩餐: { slug: "jpkor", label: "Japan Korea", mark: "日韩", note: "换口味 · 轻松约饭" },
-    西餐: { slug: "western", label: "Western", mark: "西餐", note: "聊天 · 约会 · 安静" },
-    其他: { slug: "other", label: "Food Note", mark: "好店", note: "收藏 · 想吃时打开" },
+  const imageByCuisine = {
+    火锅: "./assets/covers/hotpot.jpg",
+    烧烤: "./assets/covers/bbq.jpg",
   };
-  return visuals[restaurant.cuisine] || visuals.其他;
+  const visuals = {
+    中餐: { label: "中餐氛围图" },
+    火锅: { label: "火锅氛围图" },
+    烧烤: { label: "烧烤氛围图" },
+    粤菜: { label: "粤菜氛围图" },
+    川湘菜: { label: "川湘氛围图" },
+    粉面: { label: "粉面氛围图" },
+    小吃快餐: { label: "小吃氛围图" },
+    咖啡甜品: { label: "甜品氛围图" },
+    越南菜: { label: "越南菜氛围图" },
+    日料韩餐: { label: "日韩餐氛围图" },
+    西餐: { label: "西餐氛围图" },
+    其他: { label: "餐厅氛围图" },
+  };
+  return {
+    ...(visuals[restaurant.cuisine] || visuals.其他),
+    imageUrl: imageByCuisine[restaurant.cuisine] || "./assets/covers/asian-table.jpg",
+  };
 }
 
 function renderCloudStatus() {
