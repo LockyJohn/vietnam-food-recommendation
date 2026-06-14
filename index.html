@@ -28,11 +28,14 @@
     <template id="home-template">
       <section class="hero-band">
         <div>
-          <p class="eyebrow">Vietnam Food Notes</p>
-          <h1>刚来越南，先从几家靠谱的店吃起。</h1>
-          <p class="intro">不知道吃什么时，先看在越南的中国人真实推荐过的店。现在从胡志明开始，按区域和菜系筛选，看推荐理由，再一键打开 Google Maps。</p>
+          <p class="eyebrow">Ho Chi Minh Food Board</p>
+          <h1>在胡志明，把饭局交给真实推荐。</h1>
+          <p class="intro">先看中国人为什么推荐，再决定今天去哪里吃。第一版集中把胡志明做好，其他城市后续按需求开放。</p>
         </div>
-        <a class="primary-button hero-cta" href="#/submit">推荐一家店</a>
+        <div class="hero-side">
+          <span id="hero-count">0 家推荐</span>
+          <a class="primary-button hero-cta" href="#/submit">推荐一家店</a>
+        </div>
       </section>
 
       <section class="filter-panel" aria-label="餐厅筛选">
@@ -47,9 +50,11 @@
         <button class="icon-button" id="reset-filter" type="button" aria-label="重置筛选" title="重置筛选">↺</button>
       </section>
 
+      <section id="featured-section" class="featured-section" aria-label="精选推荐"></section>
+
       <section>
         <div class="section-heading">
-          <h2>餐厅列表</h2>
+          <h2>全部推荐</h2>
           <span id="result-count"></span>
         </div>
         <div id="restaurant-list" class="restaurant-list"></div>

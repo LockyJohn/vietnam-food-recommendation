@@ -195,7 +195,7 @@ async function getRestaurants() {
   try {
     const cloudRestaurants = await fetchCloudRestaurants();
     lastCloudError = "";
-    return [...seedRestaurants, ...cloudRestaurants];
+    return cloudRestaurants.length ? cloudRestaurants : [...seedRestaurants, ...acceptedSubmissions];
   } catch (error) {
     lastCloudError = "云端数据暂时连接失败，当前只显示示例数据。";
     console.error(error);
@@ -354,6 +354,8 @@ async function renderHome() {
     });
 
     renderCloudStatus();
+    renderHeroCount(restaurants.length);
+    renderFeaturedRestaurants(restaurants);
     renderRestaurantList(restaurants);
   };
 
@@ -367,6 +369,37 @@ async function renderHome() {
   });
 
   await updateList();
+}
+
+function renderHeroCount(count) {
+  const heroCount = document.querySelector("#hero-count");
+  if (heroCount) heroCount.textContent = `${count} 家推荐`;
+}
+
+function renderFeaturedRestaurants(restaurants) {
+  const section = document.querySelector("#featured-section");
+  if (!section) return;
+
+  if (restaurants.length < 4) {
+    section.innerHTML = "";
+    return;
+  }
+
+  const featured = [...restaurants].sort((a, b) => getRestaurantWeight(b) - getRestaurantWeight(a)).slice(0, 2);
+  if (!featured.length) {
+    section.innerHTML = "";
+    return;
+  }
+
+  section.innerHTML = `
+    <div class="section-heading">
+      <h2>今天先看这几家</h2>
+      <span>${featured.length} 家</span>
+    </div>
+    <div class="featured-grid">
+      ${featured.map((restaurant) => renderRestaurantCard(restaurant, true)).join("")}
+    </div>
+  `;
 }
 
 function renderRestaurantList(restaurants) {
@@ -384,39 +417,58 @@ function renderRestaurantList(restaurants) {
     return;
   }
 
-  list.innerHTML = restaurants
-    .map((restaurant) => {
-      const firstReason = restaurant.reasons[0]?.text || "这家店还没有展示推荐理由。";
-      const googleMeta = renderGoogleMeta(restaurant);
-      return `
-        <a class="restaurant-card" href="#/restaurant/${restaurant.id}">
-          ${renderRestaurantPhoto(restaurant, "card-photo")}
-          <div class="card-top">
-            <div class="tag-row">
-              <span class="tag">${escapeHtml(restaurant.area)}</span>
-              <span class="tag">${escapeHtml(restaurant.city)}</span>
-              <span class="tag">${escapeHtml(restaurant.cuisine)}</span>
-              <span class="tag hot">${restaurant.recommendCount} 人推荐</span>
-            </div>
-            <h3>${escapeHtml(restaurant.name)}</h3>
-            ${googleMeta ? `<p class="google-meta">${googleMeta}</p>` : ""}
-            <p class="reason-preview">${escapeHtml(firstReason)}</p>
-          </div>
-          <div class="card-meta">
-            <span>${restaurant.wantCount} 人想去</span>
-            <strong>查看详情</strong>
-          </div>
-        </a>
-      `;
-    })
-    .join("");
+  list.innerHTML = restaurants.map((restaurant) => renderRestaurantCard(restaurant)).join("");
 }
 
-function renderRestaurantPhoto(restaurant, className) {
-  if (!isLikelyEmbeddableImageUrl(restaurant.photoUrl)) return "";
+function renderRestaurantCard(restaurant, featured = false) {
+  const firstReason = restaurant.reasons[0]?.text || "这家店还没有展示推荐理由。";
+  const googleMeta = renderGoogleMeta(restaurant);
+  const scene = getRestaurantScene(restaurant);
   return `
-    <div class="${className}">
-      <img src="${escapeAttribute(restaurant.photoUrl)}" alt="${escapeAttribute(restaurant.name)}" loading="lazy" onerror="this.parentElement.remove()" />
+    <a class="restaurant-card ${featured ? "featured-card" : ""}" href="#/restaurant/${restaurant.id}">
+      ${renderRestaurantCover(restaurant, "card-photo")}
+      <div class="card-body">
+        <div class="card-title-row">
+          <div>
+            <p class="card-kicker">${escapeHtml(restaurant.area)} · ${escapeHtml(restaurant.cuisine)}</p>
+            <h3>${escapeHtml(restaurant.name)}</h3>
+          </div>
+          ${googleMeta ? `<p class="rating-badge">${googleMeta}</p>` : `<p class="rating-badge quiet">中文推荐</p>`}
+        </div>
+        <p class="scene-line">${escapeHtml(scene)}</p>
+        <p class="reason-preview">${escapeHtml(firstReason)}</p>
+        <div class="card-meta">
+          <span>${restaurant.recommendCount} 人推荐</span>
+          <strong>查看详情</strong>
+        </div>
+      </div>
+    </a>
+  `;
+}
+
+function renderRestaurantCover(restaurant, className) {
+  if (isLikelyEmbeddableImageUrl(restaurant.photoUrl)) {
+    return `
+      <div class="${className} has-photo">
+        <img src="${escapeAttribute(restaurant.photoUrl)}" alt="${escapeAttribute(restaurant.name)}" loading="lazy" onerror="this.parentElement.classList.add('image-broken')" />
+        <div class="cover-overlay">
+          <span>${escapeHtml(restaurant.cuisine)}</span>
+          <strong>${escapeHtml(restaurant.area)}</strong>
+        </div>
+      </div>
+    `;
+  }
+
+  const visual = getRestaurantVisual(restaurant);
+  return `
+    <div class="${className} cover-fallback visual-${visual.slug}">
+      <div class="cover-lines" aria-hidden="true"></div>
+      <div class="cover-copy">
+        <span>${escapeHtml(visual.label)}</span>
+        <strong>${escapeHtml(visual.mark)}</strong>
+        <small>${escapeHtml(visual.note)}</small>
+        <em>${escapeHtml(restaurant.area)}</em>
+      </div>
     </div>
   `;
 }
@@ -425,8 +477,51 @@ function renderGoogleMeta(restaurant) {
   if (!restaurant.rating && !restaurant.reviewCount) return "";
   const parts = [];
   if (restaurant.rating) parts.push(`<strong>${escapeHtml(formatRating(restaurant.rating))}</strong>`);
-  if (restaurant.reviewCount) parts.push(`${escapeHtml(formatReviewCount(restaurant.reviewCount))} 条 Google 评论`);
-  return `<span class="star">★</span> ${parts.join(" · ")}`;
+  if (restaurant.reviewCount) parts.push(`${escapeHtml(formatReviewCount(restaurant.reviewCount))} 条`);
+  return `<span class="star">★</span> ${parts.join(" / ")}`;
+}
+
+function getRestaurantWeight(restaurant) {
+  const rating = Number(restaurant.rating) || 0;
+  const reviews = Number(restaurant.reviewCount) || 0;
+  const hasPhoto = isLikelyEmbeddableImageUrl(restaurant.photoUrl) ? 80 : 0;
+  return rating * 120 + Math.min(reviews, 2000) / 8 + restaurant.recommendCount * 30 + hasPhoto;
+}
+
+function getRestaurantScene(restaurant) {
+  const scenes = {
+    中餐: "适合想吃一顿稳定的中式正餐",
+    火锅: "适合朋友小聚和不想踩雷的热闹饭局",
+    烧烤: "适合下班后轻松坐一会儿",
+    粤菜: "适合家人朋友聚餐，口味相对清淡",
+    川湘菜: "适合想吃重口、下饭、够味的一餐",
+    粉面: "适合一个人快速解决，也适合刚到胡志明时试口味",
+    小吃快餐: "适合临时补一顿，不想花太多时间",
+    咖啡甜品: "适合下午见朋友、短暂办公或饭后收尾",
+    越南菜: "适合带朋友体验本地日常口味",
+    日料韩餐: "适合换口味和轻松约饭",
+    西餐: "适合约会、聊天或更安静的一餐",
+    其他: "适合收藏起来，等需要时再打开看看",
+  };
+  return scenes[restaurant.cuisine] || scenes.其他;
+}
+
+function getRestaurantVisual(restaurant) {
+  const visuals = {
+    中餐: { slug: "chinese", label: "Chinese Table", mark: "中餐", note: "热菜 · 米饭 · 聚餐" },
+    火锅: { slug: "hotpot", label: "Hot Pot", mark: "火锅", note: "牛肉 · 汤底 · 朋友局" },
+    烧烤: { slug: "bbq", label: "Grill", mark: "烧烤", note: "炭火 · 串串 · 小聚" },
+    粤菜: { slug: "cantonese", label: "Cantonese", mark: "粤菜", note: "清淡 · 茶点 · 家常" },
+    川湘菜: { slug: "spicy", label: "Spicy", mark: "川湘", note: "辣味 · 下饭 · 够劲" },
+    粉面: { slug: "noodles", label: "Noodles", mark: "粉面", note: "汤头 · 快吃 · 一个人" },
+    小吃快餐: { slug: "snack", label: "Quick Bite", mark: "小吃", note: "简单 · 顺路 · 不费劲" },
+    咖啡甜品: { slug: "coffee", label: "Coffee", mark: "甜品", note: "咖啡 · 蛋糕 · 下午" },
+    越南菜: { slug: "vietnamese", label: "Local Taste", mark: "越南菜", note: "本地 · 日常 · 带朋友" },
+    日料韩餐: { slug: "jpkor", label: "Japan Korea", mark: "日韩", note: "换口味 · 轻松约饭" },
+    西餐: { slug: "western", label: "Western", mark: "西餐", note: "聊天 · 约会 · 安静" },
+    其他: { slug: "other", label: "Food Note", mark: "好店", note: "收藏 · 想吃时打开" },
+  };
+  return visuals[restaurant.cuisine] || visuals.其他;
 }
 
 function renderCloudStatus() {
@@ -457,10 +552,11 @@ async function renderDetail(id) {
   const isWanted = wantedIds.includes(restaurant.id);
   const adjustedWantCount = restaurant.wantCount + (isWanted ? 1 : 0);
   const googleMeta = renderGoogleMeta(restaurant);
+  const scene = getRestaurantScene(restaurant);
 
   detail.innerHTML = `
     <div class="detail-card">
-      ${renderRestaurantPhoto(restaurant, "detail-photo")}
+      ${renderRestaurantCover(restaurant, "detail-photo")}
       <div class="detail-main">
         <div>
           <div class="tag-row">
@@ -471,7 +567,7 @@ async function renderDetail(id) {
           </div>
           <h1>${escapeHtml(restaurant.name)}</h1>
           ${googleMeta ? `<p class="google-meta detail-google-meta">${googleMeta}</p>` : ""}
-          <p class="intro">这里展示的是中文推荐线索。评分、营业时间和导航请以 Google Maps 为准。</p>
+          <p class="intro">${escapeHtml(scene)}。评分、营业时间和导航请以 Google Maps 为准。</p>
         </div>
         <div class="detail-actions">
           <button id="want-button" class="primary-button want-button ${isWanted ? "active" : ""}" type="button">
